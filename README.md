@@ -1,0 +1,36 @@
+# S1 clone
+
+
+## Usage
+fill in the `HF_TOKEN`, `HF_USERNAME` in .env file
+.env file setting
+```plain text
+# for download dataset from huggingface and upload to huggingface.
+HF_TOKEN=""
+
+# for upload dataset to huggingface
+HF_USERNAME = ""
+
+```
+- HF_TOKEN: Hugging Face Token
+- HF_USERNAME: Hugging Face User Name
+
+### Dataset
+```python
+python data/collect_data.py
+```
+It will make the first **59k data** in s1 and then upload to your Hugging Face Dataset repository if you properly set the `HF_TOKEN` and `HF_USERNAME`
+
+### Citation
+
+```bibtex
+@misc{muennighoff2025s1simpletesttimescaling,
+      title={s1: Simple test-time scaling},
+      author={Niklas Muennighoff and Zitong Yang and Weijia Shi and Xiang Lisa Li and Li Fei-Fei and Hannaneh Hajishirzi and Luke Zettlemoyer and Percy Liang and Emmanuel Candès and Tatsunori Hashimoto},
+      year={2025},
+      eprint={2501.19393},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2501.19393},
+}
+```
