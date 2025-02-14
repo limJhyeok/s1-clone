@@ -1,0 +1,63 @@
+Total data size: 58986
+
+each source_type size:
+source_type
+AI-MO/NuminaMath-CoT/aops_forum                         30174
+KbsdJames/Omni-MATH                                      4238
+qfq/openaimath/Algebra                                   2807
+GAIR/OlympicArena/Math                                   2203
+qfq/openaimath/Intermediate Algebra                      2095
+qfq/openaimath/Prealgebra                                1994
+qfq/openaimath/Number Theory                             1334
+qfq/openaimath/Geometry                                  1298
+qfq/openaimath/Precalculus                               1234
+qfq/openaimath/Counting & Probability                    1196
+0xharib/xword1                                            999
+qq8933/AIME_1983_2024                                     890
+GAIR/OlympicArena/Chemistry                               661
+baber/agieval/logiqa                                      654
+codegenning/usacobench_formatted                          519
+GAIR/OlympicArena/Physics                                 516
+baber/agieval/lsat_lr                                     513
+Hothan/OlympiadBench/Theorem proof/Math                   503
+TIGER-Lab/TheoremQA/float                                 360
+GAIR/OlympicArena/Biology                                 352
+Idavidrein/gpqa                                           348
+AI-MO/NuminaMath-CoT/cn_k12                               311
+baber/agieval/lsat_rc                                     272
+baber/agieval/aqua_rat                                    259
+Hothan/OlympiadBench/Open-ended/Physics                   236
+daman1209arora/jeebench/math                              236
+baber/agieval/lsat_ar                                     233
+baber/agieval/sat_math                                    225
+GAIR/OlympicArena/Astronomy                               217
+GAIR/OlympicArena/Geography                               211
+baber/agieval/sat_en                                      208
+TIGER-Lab/TheoremQA/integer                               200
+qfq/stats_qual                                            182
+AI-MO/NuminaMath-CoT/olympiads                            173
+daman1209arora/jeebench/chem                              156
+Hothan/OlympiadBench/Open-ended/Math                      132
+daman1209arora/jeebench/phy                               123
+TIGER-Lab/TheoremQA/bool                                  112
+GAIR/OlympicArena/CS                                       90
+LiveCodeBench/release_v3                                   79
+OpenDFM/SciEval/chemistry/multiple-choice/SocraticQA       52
+TIGER-Lab/TheoremQA/list of integer                        51
+LiveCodeBench/release_v2                                   46
+OpenDFM/SciEval/chemistry/filling/reagent selection        43
+OpenDFM/SciEval/biology/multiple-choice/MedQA              43
+OpenDFM/SciEval/biology/judge/PubMedQA                     35
+OpenDFM/SciEval/biology/multiple-choice/SocraticQA         29
+LiveCodeBench/release_v1                                   26
+Hothan/OlympiadBench/Theorem proof/Physics                 25
+OpenDFM/SciEval/physics/multiple-choice/SocraticQA         25
+qfq/quant                                                  23
+baber/agieval/math_agieval                                 21
+TIGER-Lab/TheoremQA/option                                 16
+TIGER-Lab/TheoremQA/list of float                           8
+
+average of question_length: 387.69
+median of question_length: 258.00
+minimum of question_length: 12
+maximum of question_length: 23988
