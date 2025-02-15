@@ -28,10 +28,17 @@ It will make the first **59k data** in s1 and then upload to your Hugging Face D
 The `data/fix_gpqa.py` script reformats the dataset by modifying the structure of the `question` and `solution` fields. This transformation standardizes the dataset to include answer choices explicitly and appends the correct answer to the solution.
 
 To apply this transformation, simply run:
-```python 
+```python
 python data/fix_gpqa.py
 ```
 This will process the dataset and update it to the new structured format, making it more suitable for multiple-choice evaluations and automated processing.
+
+
+### Add AIME data
+
+```python
+python data/add_aime.py
+```
 
 ### Citation
 
