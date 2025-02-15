@@ -21,7 +21,10 @@ poetry run pre-commit install
 
 I tried to install `vllm` using poetry. But it seems poetry can't resolve the dependency problem.
 
-So after installing libraries using poetry and then install poetry using requirements.txt
+⚠ Related Issue: [vLLM #8851](https://github.com/vllm-project/vllm/issues/8851)
+
+
+So after installing libraries except for vLLM using poetry and then install vLLM using requirements.txt. It will update other dependencies as well.
 
 ```bash
 pip install -r requirements.txt
