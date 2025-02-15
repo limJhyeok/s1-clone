@@ -208,7 +208,6 @@ class HFLoad(ABC):
         return ds
 
 
-# 2. 데이터셋별 전처리 클래스 정의
 class OpenAIMathLoader(HFLoad):
     def load_fn(self):
         ds = datasets.load_dataset("simplescaling/openaimath", trust_remote_code=True)[
