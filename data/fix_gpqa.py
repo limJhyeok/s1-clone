@@ -47,17 +47,24 @@ def parse():
         default=None,
         help="Local path of random shuffled s1K, default value is None"
     )
+    parser.add_argument(
+        "--use_s1",
+        type=bool,
+        default=False,
+        help="Whether to use s1K of official huggingface repo for downloading. if False: download from your huggingface(default: False)"
+    )
     args = parser.parse_args()
     return args
 
 if __name__ == "__main__":
     args = parse()
-    if HF_USERNAME:
+    if args.use_s1:
+        dataset = datasets.load_dataset("s1/s1K")['train']
+    else:
         dataset = datasets.load_dataset(f"{HF_USERNAME}/s50k")['train']
         dataset = dataset.cast_column("question", datasets.Value("large_string"))
         dataset = dataset.cast_column("solution", datasets.Value("large_string"))
-    else:
-        dataset = datasets.load_dataset("s1/s1K")['train']
+        
     new_dataset = dataset.map(process_example, batched=True, batch_size=100)
     if args.local_dir:
         new_dataset.save_to_disk(args.local_dir)
