@@ -2,8 +2,41 @@
 
 
 ## Usage
+
+### Install
+
+```bash
+# install poetry
+curl -sSL https://install.python-poetry.org | python3 -
+export PATH="$HOME/.local/bin:$PATH"
+
+# install requirements
+poetry install --no-root
+
+# apply pre-commit hooks
+poetry run pre-commit install
+```
+
+#### 🔧 Handling vLLM Dependency Issue
+
+I tried to install `vllm` using poetry. But it seems poetry can't resolve the dependency problem.
+
+So after installing libraries using poetry and then install poetry using requirements.txt
+
+```bash
+pip install -r requirements.txt
+```
+
+### Activate Virtual Environment
+```bash
+eval $(poetry env activate)
+```
+
+
+### .env file setting
+
 fill in the `HF_TOKEN`, `HF_USERNAME` in .env file
-.env file setting
+
 ```plain text
 # for download dataset from huggingface and upload to huggingface.
 HF_TOKEN=""
