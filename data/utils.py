@@ -1,5 +1,6 @@
 from tqdm import tqdm
 import collections
+import requests
 
 
 def normalize_string(text):
@@ -96,3 +97,25 @@ def save_log_to_file(ds_dataframe, file_path):
         )
 
     print(f"✅ log is saved: {file_path}")
+
+
+def ask_model(question: str, model: str, port: int = 8000):
+    """
+    Sends a request to the model server and fetches a response.
+    from https://medium.com/@hakimnaufal/trying-out-vllm-deepseek-r1-in-google-colab-a-quick-guide-a4fe682b8665
+    """
+    url = f"http://localhost:{port}/v1/chat/completions"  # Adjust the URL if different
+    headers = {"Content-Type": "application/json"}
+    data = {
+        "model": model,
+        "messages": [
+            {
+                "role": "user",
+                "content": question
+            }
+        ]
+    }
+
+    response = requests.post(url, headers=headers, json=data)
+    response.raise_for_status()  # Raise exception for HTTP errors
+    return response.json()
