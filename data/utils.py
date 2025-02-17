@@ -6,6 +6,7 @@ from hashlib import sha256
 import os
 import io
 
+
 def normalize_string(text):
     """Basic string normalization."""
     # Convert to lowercase and normalize whitespace
@@ -109,15 +110,7 @@ def ask_model(question: str, model: str, port: int = 8000):
     """
     url = f"http://localhost:{port}/v1/chat/completions"  # Adjust the URL if different
     headers = {"Content-Type": "application/json"}
-    data = {
-        "model": model,
-        "messages": [
-            {
-                "role": "user",
-                "content": question
-            }
-        ]
-    }
+    data = {"model": model, "messages": [{"role": "user", "content": question}]}
 
     response = requests.post(url, headers=headers, json=data)
     response.raise_for_status()  # Raise exception for HTTP errors
@@ -151,6 +144,7 @@ def jdump(obj, f: str, mode="w", indent=4, default=str):
     else:
         raise ValueError(f"Unexpected type: {type(obj)}")
     f.close()
-    
+
+
 def question_hash(question: str) -> str:
     return sha256(question.encode()).hexdigest()[:16]
