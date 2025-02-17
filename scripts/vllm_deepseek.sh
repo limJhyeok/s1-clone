@@ -1,9 +1,9 @@
 #!/bin/sh
 set -x
 
-vllm serve deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B \
+vllm serve deepseek-ai/DeepSeek-R1-Distill-Qwen-7B \
   --device cuda \
-  --dtype float16 \
+  --dtype auto \
   --seed 42 \
   --max-model-len 16384 \
   --gpu-memory-utilization 0.9 \

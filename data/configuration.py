@@ -1,5 +1,7 @@
 import processing
 
+seed_number = 42
+
 DS_TO_SELECTION = [
     {
         "ds_name": "MATH",

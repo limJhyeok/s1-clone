@@ -1,7 +1,10 @@
 from tqdm import tqdm
 import collections
 import requests
-
+import json
+from hashlib import sha256
+import os
+import io
 
 def normalize_string(text):
     """Basic string normalization."""
@@ -119,3 +122,35 @@ def ask_model(question: str, model: str, port: int = 8000):
     response = requests.post(url, headers=headers, json=data)
     response.raise_for_status()  # Raise exception for HTTP errors
     return response.json()
+
+
+def _make_w_io_base(f, mode: str):
+    if not isinstance(f, io.IOBase):
+        f_dirname = os.path.dirname(f)
+        if f_dirname != "":
+            os.makedirs(f_dirname, exist_ok=True)
+        f = open(f, mode=mode, encoding="utf-8")
+    return f
+
+
+def jdump(obj, f: str, mode="w", indent=4, default=str):
+    """Dump a str or dictionary to a file in json format.
+
+    Args:
+        obj: An object to be written.
+        f: A string path to the location on disk.
+        mode: Mode for opening the file.
+        indent: Indent for storing json dictionaries.
+        default: A function to handle non-serializable entries; defaults to `str`.
+    """
+    f = _make_w_io_base(f, mode)
+    if isinstance(obj, (dict, list)):
+        json.dump(obj, f, indent=indent, default=default)
+    elif isinstance(obj, str):
+        f.write(obj)
+    else:
+        raise ValueError(f"Unexpected type: {type(obj)}")
+    f.close()
+    
+def question_hash(question: str) -> str:
+    return sha256(question.encode()).hexdigest()[:16]

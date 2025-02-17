@@ -5,11 +5,11 @@ import random
 import ast
 import argparse
 from dotenv import load_dotenv
-
+import configuration
 load_dotenv()
 HF_USERNAME = os.getenv("HF_USERNAME")
 
-random.seed(42)
+random.seed(configuration.seed_number)
 
 TEMPLATE = "{Question}\nAnswer Choices:\n(A) {choice1}\n(B) {choice2}\n(C) {choice3}\n(D) {choice4}"
 

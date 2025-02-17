@@ -89,3 +89,5 @@ TMP_QUESTIONS_TO_KEEP = [
     "Given circle $C$: $x^{2}+y^{2}=3$, line $l$: $x+3y-6=0$, point $P(x_{0},y_{0})∈l$, there exists point $Q∈C$, such that $∠OPQ=60^{\\circ}(O$ is the coordinate origin$)$, determine the range of $x_{0}$.\nA: $\\[- \\frac {1}{2},1\\]$,\nB: $\\[0,1\\]$,\nC: $\\[0, \\frac {6}{5}\\]$,\nD: $\\[ \\frac {1}{2}, \\frac {3}{2}\\]$,",
     "Jia walks from home to Yi's house. At the same time, Yi rides a bicycle from home towards Jia's house. Both maintain constant speeds, and Yi's riding speed is 5 times Jia's walking speed. The distance between their houses is 10,560 feet, and Jia's step length is 2.5 feet. How many steps has Jia taken when he meets Yi?\n(A) 704\n(B) 845\n(C) 1056\n(D) 1760\n(E) 3520",
 ]
+
+DEEPSEEK_REASONING_TOKEN = "</think>"

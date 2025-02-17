@@ -14,8 +14,7 @@ HF_USERNAME = os.getenv("HF_USERNAME")
 
 if __name__ == "__main__":
     log_path = "./my_59k.log"
-    seed_number = 42
-    random.seed(seed_number)
+    random.seed(configuration.seed_number)
 
     test_datasets = {
         "AI-MO/aimo-validation-aime": {"split": "train", "question_field": "problem"},
