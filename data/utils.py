@@ -146,5 +146,19 @@ def jdump(obj, f: str, mode="w", indent=4, default=str):
     f.close()
 
 
+def jload(f, mode="r"):
+    """Load a .json file into a dictionary."""
+    f = _make_r_io_base(f, mode)
+    jdict = json.load(f)
+    f.close()
+    return jdict
+
+
+def _make_r_io_base(f, mode: str):
+    if not isinstance(f, io.IOBase):
+        f = open(f, mode=mode, encoding="utf-8")
+    return f
+
+
 def question_hash(question: str) -> str:
     return sha256(question.encode()).hexdigest()[:16]

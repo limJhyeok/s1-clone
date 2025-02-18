@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 import os
 import argparse
 from vllm import LLM, SamplingParams
+from huggingface_hub import hf_hub_download
 
 
 load_dotenv()
@@ -42,24 +43,32 @@ def deepseek_qa_batch(
 ):
     max_attempts = 3
     batch_size = len(prompts)
-    answers = [None] * batch_size
+    results = [{"thinking": None, "answer": None}] * batch_size
     attempts = 0
 
-    while any(answer is None for answer in answers) and attempts < max_attempts:
+    while (
+        any(result["thinking"] is None for result in results)
+        and attempts < max_attempts
+    ):
         try:
             response_batch = model.generate(prompts, sampling_params)
+
+            temp = {}
             for i, response in enumerate(response_batch):
                 text = response.outputs[0].text
                 if constants.DEEPSEEK_REASONING_TOKEN in text:
                     thinking, answer = text.split(constants.DEEPSEEK_REASONING_TOKEN)
-                    answers[i] = (thinking.strip(), answer.strip())
+                    temp["thinking"] = thinking.strip()
+                    temp["answer"] = answer.strip()
+                    results[i] = temp
                 else:
-                    answers[i] = ("", text.strip())
+                    results[i]["thinking"] = None
+                    results[i]["answer"] = text.strip()
         except Exception as e:
             logging.error(f"Batch processing error: {e}")
         attempts += 1
 
-    return answers
+    return results
 
 
 def process_question(question: str, model: str, subdir: str):
@@ -69,7 +78,7 @@ def process_question(question: str, model: str, subdir: str):
     result = dict(
         question_hash=qhash, question=question, thinking=thinking, response=response
     )
-    utils.jdump(result, f"results/deepseek/{subdir}/{qhash}.json")
+    utils.jdump(result, f"results/reasoning/{subdir}/{qhash}.json")
     logging.info(f"Processed question {qhash}")
 
 
@@ -81,14 +90,14 @@ def process_questions_batch(
 
     results = deepseek_qa_batch(questions, model, sampling_params)
 
-    for qhash, question, (thinking, response) in zip(qhash_list, questions, results):
-        result = dict(
+    for qhash, question, (result) in zip(qhash_list, questions, results):
+        row = dict(
             question_hash=qhash,
             question=question,
-            thinking=thinking,
-            response=response,
+            thinking=result["thinking"],
+            response=result["answer"],
         )
-        utils.jdump(result, f"results/deepseek/{subdir}/{qhash}.json")
+        utils.jdump(row, f"results/reasoning/{subdir}/{qhash}.json")
         logging.info(f"Processed question {qhash}")
 
 
@@ -102,7 +111,7 @@ def generate_deepseek(model):
     random.shuffle(questions)
     logging.info(f"Processing {len(questions)} total questions")
     subdir = model
-    existing_json = glob(f"results/deepseek/{subdir}/*.json")
+    existing_json = glob(f"results/reasoning/{subdir}/*.json")
     existing_qhash_list = [
         jsonpath.split("/")[-1].split(".")[0] for jsonpath in existing_json
     ]
@@ -126,14 +135,14 @@ def generate_deepseek_batch(
     if HF_USERNAME:
         questions = load_dataset(f"{HF_USERNAME}/s50k")["train"]["question"]
     else:
-        questions = load_dataset("qfq/train")["train"]["question"]
+        questions = load_dataset("qfq/train")["train"]["question"][:5]  # small
 
-    random.seed(configuration.SEED_NUMBER)
+    random.seed(configuration.seed_number)
     random.shuffle(questions)
     logging.info(f"Processing {len(questions)} total questions")
     subdir = model_name
 
-    existing_json = glob(f"results/deepseek/{subdir}/*.json")
+    existing_json = glob(f"results/reasoning/{subdir}/*.json")
     existing_qhash_list = {
         jsonpath.split("/")[-1].split(".")[0] for jsonpath in existing_json
     }
@@ -144,7 +153,7 @@ def generate_deepseek_batch(
 
     for i in range(0, len(questions), batch_size):
         batch = questions[i : i + batch_size]
-        process_questions_batch(batch, model_name, subdir)
+        process_questions_batch(batch, model, subdir, sampling_params)
         logging.info(
             f"Processed batch {i // batch_size + 1}/{len(questions) // batch_size + 1}"
         )
@@ -167,8 +176,8 @@ def parse():
     parser.add_argument(
         "--dtype",
         type=str,
-        default="float16",
-        help="(default: float16)",
+        default="auto",
+        help="(default: auto)",
     )
     parser.add_argument(
         "--temperature",
@@ -189,12 +198,20 @@ def parse():
 
 if __name__ == "__main__":
     args = parse()
-    utils.jdump(vars(args), f"results/deepseek/{args.model_name}/args.json")
+    try:
+        config_path = hf_hub_download(args.model_name, "config.json")
+        print(f"Config file found at: {config_path}")
+    except Exception as e:
+        print(f"Unexpected error occurred: {e}")
+
+    utils.jdump(vars(args), f"results/reasoning/{args.model_name}/args.json")
 
     model = LLM(
-        args.model_name,
+        model=args.model_name,
         tensor_parallel_size=args.tensor_parallel_size,
         dtype=args.dtype,
+        trust_remote_code=True,
+        seed=configuration.seed_number,
     )
     sampling_params = SamplingParams(
         temperature=args.temperature,
