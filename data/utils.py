@@ -160,5 +160,11 @@ def _make_r_io_base(f, mode: str):
     return f
 
 
+def tload(f, mode="r"):
+    with open(f, mode) as file:
+        output = file.read()
+    return output
+
+
 def question_hash(question: str) -> str:
     return sha256(question.encode()).hexdigest()[:16]
