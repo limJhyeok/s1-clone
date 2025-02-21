@@ -53,8 +53,10 @@ if __name__ == "__main__":
         return True
 
     ds = ds.filter(partial(is_unique, column="question", memory=memory))
-    ds.push_to_hub(f"{HF_USERNAME}/s50k")
-
+    if HF_USERNAME:
+        ds.push_to_hub(f"{HF_USERNAME}/s50k")
+    else:
+        ds.save_to_disk("s50k")
     # log
     ds_dataframe = ds.to_pandas()
     utils.save_log_to_file(ds_dataframe, log_path)

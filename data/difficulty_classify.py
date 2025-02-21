@@ -9,6 +9,7 @@ from vllm import LLM, SamplingParams
 import configuration
 from huggingface_hub import hf_hub_download
 import logging
+from datetime import datetime
 from datasets import Dataset
 from glob import glob
 
@@ -35,7 +36,7 @@ def difficulty_classification(
     if HF_USERNAME:
         questions = load_dataset(f"{HF_USERNAME}/s50k")["train"]["question"]
     else:
-        questions = load_dataset("qfq/train")["train"]["question"][:5]  # small
+        questions = load_dataset("qfq/train")["train"]["question"]
 
     pretty_name = model_name.replace("/", "_").replace("-", "_").replace(".", "_")
     tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -92,13 +93,17 @@ def assemble_output(model_name: str, upload: bool = False):
             example[pretty_name] = output[utils.question_hash(example["question"])]
             new_dataset.append(example)
         new_dataset = Dataset.from_list(new_dataset)
-        new_dataset.push_to_hub(f"{HF_USERNAME}/train_{pretty_name}_inference")
+        if HF_USERNAME:
+            new_dataset.push_to_hub(f"{HF_USERNAME}/train_{pretty_name}_inference")
+        else:
+            new_dataset.save_to_disk(f"results/train_{pretty_name}_inference")
     utils.jdump(
         result, f"results/difficulty_classification/{pretty_name}/inference_output.json"
     )
 
 
 def assemble_reasoning_output(reasoning_model_name):
+    pretty_name = reasoning_model_name.replace("/", "_").replace("-", "_").replace(".", "_")
     jsons = [
         f
         for f in glob(f"results/reasoning/{reasoning_model_name}/*.json")
@@ -123,7 +128,7 @@ def assemble_reasoning_output(reasoning_model_name):
             )
             utils.jdump(
                 new_qdict,
-                f"results/difficulty_classification/reasoning/grading_input/{qhash}.json",
+                f"results/difficulty_classification/{pretty_name}/grading_input/{qhash}.json",
             )
 
 
@@ -185,8 +190,9 @@ if __name__ == "__main__":
         print(f"Unexpected error occurred: {e}")
 
     pretty_name = args.model_name.replace("/", "_").replace("-", "_").replace(".", "_")
+    current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     utils.jdump(
-        vars(args), f"results/difficulty_classification/{pretty_name}/args.json"
+        vars(args), f"args/difficulty_classification/{pretty_name}-{current_time}.json"
     )
 
     model = LLM(
