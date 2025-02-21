@@ -1,7 +1,8 @@
 import utils
+from datetime import datetime
 import time
 import logging
-from datasets import load_dataset
+from datasets import load_dataset, Dataset
 import configuration
 import constants
 from functools import partial
@@ -13,6 +14,7 @@ import os
 import argparse
 from vllm import LLM, SamplingParams
 from huggingface_hub import hf_hub_download
+from tqdm import tqdm
 
 
 load_dotenv()
@@ -135,7 +137,7 @@ def generate_deepseek_batch(
     if HF_USERNAME:
         questions = load_dataset(f"{HF_USERNAME}/s50k")["train"]["question"]
     else:
-        questions = load_dataset("qfq/train")["train"]["question"][:5]  # small
+        questions = load_dataset("qfq/train")["train"]["question"]
 
     random.seed(configuration.seed_number)
     random.shuffle(questions)
@@ -157,6 +159,31 @@ def generate_deepseek_batch(
         logging.info(
             f"Processed batch {i // batch_size + 1}/{len(questions) // batch_size + 1}"
         )
+
+
+def upload_reasoning_result(model_name: str):
+    jsons = glob(f"results/reasoning/{model_name}/*.json")
+    if HF_USERNAME:
+        all_train = load_dataset(f"{HF_USERNAME}/s50k")["train"]
+    else:
+        all_train = load_dataset("qfq/train")["train"]
+    all_train_dict = {}
+    for example in tqdm(all_train):
+        all_train_dict[utils.question_hash(example["question"])] = example
+    results = []
+    for json_path in tqdm(jsons):
+        qdict = utils.jload(json_path)
+        qhash = qdict["question_hash"]
+        if qhash in all_train_dict:
+            all_train_example = all_train_dict[qhash]
+            all_train_example["thinking_trajectories"] = [qdict["thinking"]]
+            all_train_example["attempt"] = qdict["response"]
+            results.append(all_train_example)
+    dataset = Dataset.from_list(results)
+    if HF_USERNAME:
+        dataset.push_to_hub(f"{HF_USERNAME}/reasoning_all")
+    else:
+        dataset.save_to_disk("results/reasoning_all")
 
 
 def parse():
@@ -204,7 +231,8 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Unexpected error occurred: {e}")
 
-    utils.jdump(vars(args), f"results/reasoning/{args.model_name}/args.json")
+    current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    utils.jdump(vars(args), f"args/reasoning/{args.model_name}-{current_time}.json")
 
     model = LLM(
         model=args.model_name,
@@ -219,3 +247,4 @@ if __name__ == "__main__":
     )
 
     generate_deepseek_batch(args.model_name, model, args.batch_size, sampling_params)
+    upload_reasoning_result(args.model_name)
