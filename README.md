@@ -5,36 +5,13 @@
 
 ### Install
 
-```bash
-# install poetry
-curl -sSL https://install.python-poetry.org | python3 -
-export PATH="$HOME/.local/bin:$PATH"
-
-# install requirements
-poetry install --no-root
-
-# apply pre-commit hooks
-poetry run pre-commit install
-```
-
-#### 🔧 Handling vLLM Dependency Issue
-
-I tried to install `vllm` using poetry. But it seems poetry can't resolve the dependency problem.
-
-⚠ Related Issue: [vLLM #8851](https://github.com/vllm-project/vllm/issues/8851)
-
-
-So after installing libraries except for vLLM using poetry and then install vLLM using requirements.txt. It will update other dependencies as well.
+- OS: Ubuntu 22.04
+- Python: 3.11
+- Nvidia driver version: 12.4
 
 ```bash
 pip install -r requirements.txt
 ```
-
-### Activate Virtual Environment
-```bash
-eval $(poetry env activate)
-```
-
 
 ### .env file setting
 
