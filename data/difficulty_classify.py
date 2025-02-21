@@ -103,7 +103,9 @@ def assemble_output(model_name: str, upload: bool = False):
 
 
 def assemble_reasoning_output(reasoning_model_name):
-    pretty_name = reasoning_model_name.replace("/", "_").replace("-", "_").replace(".", "_")
+    pretty_name = (
+        reasoning_model_name.replace("/", "_").replace("-", "_").replace(".", "_")
+    )
     jsons = [
         f
         for f in glob(f"results/reasoning/{reasoning_model_name}/*.json")
