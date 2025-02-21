@@ -211,7 +211,7 @@ if __name__ == "__main__":
     difficulty_classification(args.model_name, model, sampling_params, args.batch_size)
     assemble_output(args.model_name)
 
-    reasoning_output_dir = "results/difficulty_classification/reasoning"
+    reasoning_output_dir = "results/reasoning"
     if os.path.exists(reasoning_output_dir) and os.path.isdir(reasoning_output_dir):
         pass
     else:
