@@ -278,8 +278,8 @@ if __name__ == "__main__":
     do_domain_classification()
     upload_domain()
 
-    do_grading("deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B")
-    upload_grading("deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B")
+    do_grading("deepseek-ai/DeepSeek-R1-Distill-Qwen-32B")
+    upload_grading("deepseek-ai/DeepSeek-R1-Distill-Qwen-32B")
 
     do_grading("Qwen/Qwen2.5-7B-Instruct")
     upload_grading("Qwen/Qwen2.5-7B-Instruct")
