@@ -12,7 +12,6 @@ from tqdm import tqdm
 
 load_dotenv()
 HF_USERNAME = os.getenv("HF_USERNAME")
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 logging.basicConfig(level=logging.INFO)
 
 
