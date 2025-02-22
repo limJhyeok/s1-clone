@@ -121,7 +121,7 @@ def generate_deepseek_batch(
             )
 
     for i in range(0, len(prompts), batch_size):
-        question_batch = questions[i + i + batch_size]
+        question_batch = questions[i : i + batch_size]
         prompt_batch = prompts[i : i + batch_size]
         process_questions_batch(
             question_batch, prompt_batch, model, subdir, sampling_params
