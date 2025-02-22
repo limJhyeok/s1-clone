@@ -145,38 +145,44 @@ def parse():
     parser.add_argument(
         "--tensor_parallel_size",
         type=int,
-        default=1,
-        help="(default: 1)",
+        default=4,
+        help="(default: 4)",
     )
     parser.add_argument(
         "--dtype",
         type=str,
-        default="auto",
+        default="bfloat16",
         help="(default: auto)",
     )
     parser.add_argument(
         "--temperature",
         type=float,
-        default=0.05,
-        help="(default: 0.05)",
+        default=0.7,
+        help="(default: 0.7)",
+    )
+    parser.add_argument(
+        "--top_p",
+        type=float,
+        default=0.8,
+        help="(default: 0.8)",
     )
     parser.add_argument(
         "--max_tokens",
         type=int,
-        default=32768,
-        help="(default: 32768)",
+        default=1024,
+        help="(default: 1024)",
     )
     parser.add_argument(
         "--batch_size",
         type=int,
-        default=2,
-        help="batch size for parallel inference(default: 2)",
+        default=2048,
+        help="batch size for parallel inference(default: 2048)",
     )
     parser.add_argument(
         "--reasoning_model_name",
         type=str,
-        default="deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
-        help="reasoning model name in generate_reasoning.py(default: deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B)",
+        default="deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
+        help="reasoning model name in generate_reasoning.py(default: deepseek-ai/DeepSeek-R1-Distill-Qwen-32B)",
     )
 
     args = parser.parse_args()
@@ -205,7 +211,7 @@ if __name__ == "__main__":
         seed=configuration.seed_number,
     )
     sampling_params = SamplingParams(
-        temperature=args.temperature, max_tokens=args.max_tokens
+        temperature=args.temperature, max_tokens=args.max_tokens, top_p=args.top_p
     )
 
     difficulty_classification(args.model_name, model, sampling_params, args.batch_size)

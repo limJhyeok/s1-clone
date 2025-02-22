@@ -43,32 +43,48 @@ def deepseek_qa(prompt: str, model: str):
 def deepseek_qa_batch(
     prompts: list, model: LLM, sampling_params: SamplingParams = None
 ):
-    max_attempts = 3
-    batch_size = len(prompts)
-    results = [{"thinking": None, "answer": None}] * batch_size
+    max_attempts = 50
+    results = [{"thinking": "", "answer": ""} for _ in range(len(prompts))]
     attempts = 0
 
     while (
-        any(result["thinking"] is None for result in results)
+        any(
+            (result["thinking"] == "") or (result["answer"] == "") for result in results
+        )
         and attempts < max_attempts
     ):
         try:
-            response_batch = model.generate(prompts, sampling_params)
+            remaining_indices = [
+                i
+                for i, result in enumerate(results)
+                if (result["thinking"] == "") or (result["answer"] == "")
+            ]
+            remaining_prompts = [prompts[i] for i in remaining_indices]
 
-            temp = {}
-            for i, response in enumerate(response_batch):
+            if not remaining_prompts:
+                break
+
+            response_batch = model.generate(remaining_prompts, sampling_params)
+
+            for idx, response in zip(remaining_indices, response_batch):
                 text = response.outputs[0].text
                 if constants.DEEPSEEK_REASONING_TOKEN in text:
-                    thinking, answer = text.split(constants.DEEPSEEK_REASONING_TOKEN)
-                    temp["thinking"] = thinking.strip()
-                    temp["answer"] = answer.strip()
-                    results[i] = temp
+                    parts = text.split(constants.DEEPSEEK_REASONING_TOKEN, 1)
+                    thinking = parts[0].strip()
+                    answer = parts[1].strip() if len(parts) > 1 else ""
                 else:
-                    results[i]["thinking"] = None
-                    results[i]["answer"] = text.strip()
+                    thinking = ""
+                    answer = text.strip()
+
+                results[idx]["thinking"] = thinking
+                results[idx]["answer"] = answer
         except Exception as e:
             logging.error(f"Batch processing error: {e}")
+
         attempts += 1
+        if attempts >= max_attempts:
+            logging.warning("Reached maximum attempts. Some results may be incomplete.")
+            break
 
     return results
 
@@ -85,12 +101,16 @@ def process_question(question: str, model: str, subdir: str):
 
 
 def process_questions_batch(
-    questions: list[str], model: LLM, subdir: str, sampling_params: SamplingParams
+    questions: list[str],
+    formatted_questions: list[str],
+    model: LLM,
+    subdir: str,
+    sampling_params: SamplingParams,
 ):
     qhash_list = [utils.question_hash(q) for q in questions]
     logging.info(f"Processing {len(qhash_list)} questions")
 
-    results = deepseek_qa_batch(questions, model, sampling_params)
+    results = deepseek_qa_batch(formatted_questions, model, sampling_params)
 
     for qhash, question, (result) in zip(qhash_list, questions, results):
         row = dict(
@@ -135,9 +155,11 @@ def generate_deepseek_batch(
     model_name: str, model: LLM, batch_size: int, sampling_params: SamplingParams
 ):
     if HF_USERNAME:
-        questions = load_dataset(f"{HF_USERNAME}/s50k")["train"]["question"]
+        dataset = load_dataset(f"{HF_USERNAME}/s50k")["train"]
+        questions = dataset["question"]
     else:
-        questions = load_dataset("qfq/train")["train"]["question"]
+        dataset = load_dataset("qfq/train")["train"]
+        questions = dataset["question"]
 
     random.seed(configuration.seed_number)
     random.shuffle(questions)
@@ -148,17 +170,44 @@ def generate_deepseek_batch(
     existing_qhash_list = {
         jsonpath.split("/")[-1].split(".")[0] for jsonpath in existing_json
     }
+
     questions = [
         q for q in questions if utils.question_hash(q) not in existing_qhash_list
     ]
-    logging.info(f"{len(questions)} questions left after filtering")
 
-    for i in range(0, len(questions), batch_size):
-        batch = questions[i : i + batch_size]
-        process_questions_batch(batch, model, subdir, sampling_params)
-        logging.info(
-            f"Processed batch {i // batch_size + 1}/{len(questions) // batch_size + 1}"
+    formatted_questions = [
+        formatting_for_deepseek_r1(q, subject=d["cot_type"])
+        for q, d in zip(dataset["question"], dataset)
+        if utils.question_hash(q) not in existing_qhash_list
+    ]
+
+    for i in range(0, len(formatted_questions), batch_size):
+        original_batch = questions[i : i + batch_size]
+        formatted_batch = formatted_questions[i : i + batch_size]
+        process_questions_batch(
+            original_batch, formatted_batch, model, subdir, sampling_params
         )
+        logging.info(
+            f"Processed batch {i // batch_size + 1}/{len(formatted_questions) // batch_size + 1}"
+        )
+
+
+def formatting_for_deepseek_r1(prompt: str, subject: str = None) -> str:
+    if subject == "math":
+        return formatting_for_math_in_deepseek_r1(prompt)
+    else:
+        return formatting_for_general_in_deepseek_r1(prompt)
+
+
+def formatting_for_general_in_deepseek_r1(prompt: str) -> str:
+    return prompt + "<think>\n"
+
+
+def formatting_for_math_in_deepseek_r1(prompt: str) -> str:
+    return (
+        prompt
+        + "Please reason step by step, and put your final answer within \boxed{}."
+    )
 
 
 def upload_reasoning_result(model_name: str):
@@ -191,20 +240,26 @@ def parse():
     parser.add_argument(
         "--model_name",
         type=str,
-        default="deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
-        help="Reasoning model name in vLLM(default: deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B)",
+        default="deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
+        help="Reasoning model name in vLLM(default: deepseek-ai/DeepSeek-R1-Distill-Qwen-32B)",
+    )
+    parser.add_argument(
+        "--max-model_len",
+        type=int,
+        default=16384,
+        help="(default: 16384)",
     )
     parser.add_argument(
         "--tensor_parallel_size",
         type=int,
-        default=1,
-        help="(default: 1)",
+        default=4,
+        help="number of GPU machine (default: 4)",
     )
     parser.add_argument(
         "--dtype",
         type=str,
-        default="auto",
-        help="(default: auto)",
+        default="bfloat16",
+        help="Use bfloat16 for better performance on H100 GPUs (default: bfloat16)",
     )
     parser.add_argument(
         "--temperature",
@@ -213,10 +268,22 @@ def parse():
         help="(default: 0.6)",
     )
     parser.add_argument(
+        "--max_tokens",
+        type=int,
+        default=15000,
+        help="(default: 15,000)",
+    )
+    parser.add_argument(
         "--batch_size",
         type=int,
-        default=2,
-        help="batch size for parallel inference(default: 2)",
+        default=2048,
+        help="batch size for parallel inference(default: 2048)",
+    )
+    parser.add_argument(
+        "--gpu_memory_utilization",
+        type=float,
+        default=0.95,
+        help="(default: 0.95)",
     )
 
     args = parser.parse_args()
@@ -236,14 +303,15 @@ if __name__ == "__main__":
 
     model = LLM(
         model=args.model_name,
+        max_model_len=args.max_model_len,
         tensor_parallel_size=args.tensor_parallel_size,
         dtype=args.dtype,
         trust_remote_code=True,
         seed=configuration.seed_number,
+        gpu_memory_utilization=args.gpu_memory_utilization,
     )
     sampling_params = SamplingParams(
-        temperature=args.temperature,
-        top_p=0.9,
+        temperature=args.temperature, top_p=0.9, max_tokens=args.max_tokens
     )
 
     generate_deepseek_batch(args.model_name, model, args.batch_size, sampling_params)

@@ -12,6 +12,7 @@ from tqdm import tqdm
 
 load_dotenv()
 HF_USERNAME = os.getenv("HF_USERNAME")
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 logging.basicConfig(level=logging.INFO)
 
 
@@ -24,6 +25,7 @@ def _process_question(question: str, msc_prompt: str, system_prompt: str):
         completion, _ = inference_utils.apiqa(
             user_prompt, "claude-3-5-sonnet-20241022", system_prompt, json_format=False
         )
+
         if completion[-2:].isdigit() and len(completion[-2:]) == 2:
             result = completion[-2:]
         else:
