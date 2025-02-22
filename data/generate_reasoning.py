@@ -5,7 +5,6 @@ from datasets import load_dataset, Dataset
 import configuration
 import constants
 from glob import glob
-import random
 from dotenv import load_dotenv
 import os
 import argparse
@@ -70,7 +69,7 @@ def deepseek_qa_batch(
 
 def process_questions_batch(
     questions: list[str],
-    formatted_questions: list[str],
+    prompts: list[str],
     model: LLM,
     subdir: str,
     sampling_params: SamplingParams,
@@ -78,12 +77,15 @@ def process_questions_batch(
     qhash_list = [utils.question_hash(q) for q in questions]
     logging.info(f"Processing {len(qhash_list)} questions")
 
-    results = deepseek_qa_batch(formatted_questions, model, sampling_params)
+    results = deepseek_qa_batch(prompts, model, sampling_params)
 
-    for qhash, question, (result) in zip(qhash_list, questions, results):
+    for qhash, question, prompt, (result) in zip(
+        qhash_list, questions, prompts, results
+    ):
         row = dict(
             question_hash=qhash,
             question=question,
+            prompt=prompt,
             thinking=result["thinking"],
             response=result["answer"],
         )
@@ -101,8 +103,6 @@ def generate_deepseek_batch(
         dataset = load_dataset("qfq/train")["train"]
         questions = dataset["question"]
 
-    random.seed(configuration.seed_number)
-    random.shuffle(questions)
     logging.info(f"Processing {len(questions)} total questions")
     subdir = model_name
 
@@ -111,39 +111,38 @@ def generate_deepseek_batch(
         jsonpath.split("/")[-1].split(".")[0] for jsonpath in existing_json
     }
 
-    questions = [
-        q for q in questions if utils.question_hash(q) not in existing_qhash_list
-    ]
+    questions = []
+    prompts = []
+    for d in dataset:
+        if utils.question_hash(d["question"]) not in existing_qhash_list:
+            questions.append(d["question"])
+            prompts.append(
+                get_prompt_for_deepseek_r1(d["question"], subject=d["cot_type"])
+            )
 
-    formatted_questions = [
-        formatting_for_deepseek_r1(q, subject=d["cot_type"])
-        for q, d in zip(dataset["question"], dataset)
-        if utils.question_hash(q) not in existing_qhash_list
-    ]
-
-    for i in range(0, len(formatted_questions), batch_size):
-        original_batch = questions[i : i + batch_size]
-        formatted_batch = formatted_questions[i : i + batch_size]
+    for i in range(0, len(prompts), batch_size):
+        question_batch = questions[i + i + batch_size]
+        prompt_batch = prompts[i : i + batch_size]
         process_questions_batch(
-            original_batch, formatted_batch, model, subdir, sampling_params
+            question_batch, prompt_batch, model, subdir, sampling_params
         )
         logging.info(
-            f"Processed batch {i // batch_size + 1}/{len(formatted_questions) // batch_size + 1}"
+            f"Processed batch {i // batch_size + 1}/{len(prompts) // batch_size + 1}"
         )
 
 
-def formatting_for_deepseek_r1(prompt: str, subject: str = None) -> str:
+def get_prompt_for_deepseek_r1(prompt: str, subject: str = None) -> str:
     if subject == "math":
-        return formatting_for_math_in_deepseek_r1(prompt)
+        return get_prompt_for_math_in_deepseek_r1(prompt)
     else:
-        return formatting_for_general_in_deepseek_r1(prompt)
+        return get_prompt_for_general_in_deepseek_r1(prompt)
 
 
-def formatting_for_general_in_deepseek_r1(prompt: str) -> str:
+def get_prompt_for_general_in_deepseek_r1(prompt: str) -> str:
     return prompt + "<think>\n"
 
 
-def formatting_for_math_in_deepseek_r1(prompt: str) -> str:
+def get_prompt_for_math_in_deepseek_r1(prompt: str) -> str:
     return (
         prompt
         + "Please reason step by step, and put your final answer within \boxed{}."
