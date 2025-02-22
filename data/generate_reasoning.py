@@ -183,7 +183,7 @@ def parse():
         help="Reasoning model name in vLLM(default: deepseek-ai/DeepSeek-R1-Distill-Qwen-32B)",
     )
     parser.add_argument(
-        "--max-model_len",
+        "--max_model_len",
         type=int,
         default=16384,
         help="(default: 16384)",
