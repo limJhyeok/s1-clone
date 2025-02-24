@@ -7,6 +7,7 @@ import logging
 import re
 from collections import Counter
 import numpy as np
+from tokenization import mathcot_sft
 
 load_dotenv()
 HF_USERNAME = os.getenv("HF_USERNAME")
@@ -201,3 +202,16 @@ if __name__ == "__main__":
         sampled_reasoning_all.push_to_hub(f"{HF_USERNAME}/s1K")
     else:
         sampled_reasoning_all.save_to_disk("results/s1k")
+
+    if HF_USERNAME:
+        download_data_path = f"{HF_USERNAME}/s1K"
+        upload_data_path = f"{HF_USERNAME}/s1K_tokenized"
+    else:
+        download_data_path = "simplescaling/s1K"
+        upload_data_path = None
+
+    mathcot_sft(
+        download_data_path=download_data_path,
+        upload_data_path=upload_data_path,
+        num_proc=80,
+    )
