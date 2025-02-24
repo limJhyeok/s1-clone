@@ -5,6 +5,8 @@ from datasets import load_dataset, Dataset
 import utils
 import logging
 import re
+from collections import Counter
+import numpy as np
 
 load_dotenv()
 HF_USERNAME = os.getenv("HF_USERNAME")
@@ -102,3 +104,100 @@ if __name__ == "__main__":
         reasoning_all.push_to_hub(f"{HF_USERNAME}/reasoning_all_hardfiltered_v2")
     else:
         reasoning_all.save_to_disk("results/reasoning_all_hardfiltered_v2")
+
+    selected_qhashes = set()
+    for example in reasoning_all:
+        qhash = utils.question_hash(example["question"])
+        if featurized_dict[qhash]["isgenminicorrect"]:
+            if example["source_type"] in ["Idavidrein/gpqa", "qq8933/AIME_1983_2024"]:
+                selected_qhashes.add(qhash)
+            elif "qfq/openaimath" in example["source_type"]:
+                if featurized_dict[qhash]["genmini_length"] > 5600:
+                    selected_qhashes.add(qhash)
+
+    # Diversity Sampling
+    gpqa_domain = [
+        featurized_dict[utils.question_hash(x["question"])]["domain"]
+        for x in reasoning_all.filter(lambda x: x["source_type"] == "Idavidrein/gpqa")
+    ]
+    gpqa_domain = Counter(gpqa_domain)
+    aime_domain = [
+        featurized_dict[utils.question_hash(x["question"])]["domain"]
+        for x in reasoning_all.filter(
+            lambda x: x["source_type"] == "qq8933/AIME_1983_2024"
+        )
+    ]
+    aime_domain = Counter(aime_domain)
+    enlarge_ratio = 0.5 * sum(aime_domain.values()) / sum(gpqa_domain.values())
+    for domain in gpqa_domain:
+        gpqa_domain[domain] = int(gpqa_domain[domain] * enlarge_ratio)
+    benchmark_domain = gpqa_domain + aime_domain
+    benchmark_domains, benchmark_weights = (
+        list(benchmark_domain.keys()),
+        list(benchmark_domain.values()),
+    )
+    benchmark_weights = np.array(benchmark_weights) / sum(benchmark_weights)
+
+    def benchmark_sample(benchmark_domains, benchmark_weights):
+        return np.random.choice(benchmark_domains, size=1, p=benchmark_weights)[0]
+
+    all_domains = list(
+        set(
+            [
+                featurized_dict[utils.question_hash(example["question"])]["domain"]
+                for example in reasoning_all
+            ]
+        )
+    )
+
+    def uniform_sample(all_domains):
+        return np.random.choice(all_domains, size=1)[0]
+
+    questions_ordered_by_domain = {}
+    for domain in tqdm(all_domains):
+        questions_ordered_by_domain[domain] = {
+            k: v for k, v in featurized_dict.items() if v["domain"] == domain
+        }
+
+    # Powerlaw length sampling
+    pbar = tqdm(initial=len(selected_qhashes), total=1000, desc="Sampling questions")
+    while len(selected_qhashes) < 1000:
+        # first sample 300 uniformly over all domains
+        if len(selected_qhashes) < 700:
+            random_domain = uniform_sample(all_domains)
+        else:
+            random_domain = benchmark_sample(benchmark_domains, benchmark_weights)
+        # Sort by chain length and take the longest one
+        domain_examples = questions_ordered_by_domain[random_domain]
+        qhashes = list(domain_examples.keys())
+        lengths = np.array(
+            [int(domain_examples[qhash]["genmini_length"]) for qhash in qhashes]
+        )
+        ranks = len(lengths) - 1 - np.argsort(np.argsort(lengths))
+        length_weights = np.power(2.0, -ranks)
+        length_weights = length_weights / length_weights.sum()
+        selected_qhash = np.random.choice(qhashes, p=length_weights)
+        selected_qhashes.add(selected_qhash)
+        questions_ordered_by_domain[random_domain].pop(selected_qhash)
+        if len(questions_ordered_by_domain[random_domain]) == 0:
+            if random_domain in all_domains:
+                all_domains.remove(random_domain)
+            if random_domain in benchmark_domains:
+                benchmark_weights = np.delete(
+                    benchmark_weights, benchmark_domains.index(random_domain)
+                )
+                benchmark_weights = benchmark_weights / benchmark_weights.sum()
+                benchmark_domains.remove(random_domain)
+        pbar.update(1)
+    pbar.close()
+
+    print("Verify length of selected_qhashes:", len(selected_qhashes))
+    sampled_reasoning_all = reasoning_all.filter(
+        lambda x: utils.question_hash(x["question"]) in selected_qhashes
+    )
+    print("Verify length of sampled_reasoning_all:", len(sampled_reasoning_all))
+
+    if HF_USERNAME:
+        sampled_reasoning_all.push_to_hub(f"{HF_USERNAME}/s1K")
+    else:
+        sampled_reasoning_all.save_to_disk("results/s1k")
