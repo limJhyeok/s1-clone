@@ -56,7 +56,8 @@ python data/add_aime.py
 ```
 
 ### 4. Generate Reasoning(thinking trajectory)
-**DeepSeek-R1-Distill-Qwen-32B(reasoning model)**를 사용하여 reasoning 레이블을 생성합니다.
+
+**DeepSeek-R1-Distill-Qwen-32B(reasoning model)** 를 사용하여 reasoning 레이블을 생성합니다.
 
 **권장 설정**: 최소 **4x H100 GPU**. 이 설정에서 **2048개 샘플**을 처리하는 데 약 1시간이 소요됩니다.
 
@@ -93,7 +94,7 @@ python data/featurization.py
 #### 피처링 단계:
 
 1. **도메인 분류** - `claude-3-5-sonnet-20241022`를 사용하여 질문을 분류합니다.
-2. **채점** - AI 생성 답변이 올바른지 여부를 `data/grading.txt`의 채점 모델을 통해 판별합니다.
+2. **채점** - AI 생성 답변이 올바른지 여부를 프롬프트 `data/grading.txt`와 채점 모델(`calude-3-5-sonnet-20241022`)을 통해 판별합니다.
 3. **채점 결과 업로드** - 채점 정보를 데이터셋에 업데이트합니다.
 4. **토큰 길이 업로드** - 모델 응답의 토큰 길이를 계산하여 업데이트합니다.
 
@@ -107,10 +108,10 @@ python data/filter.py
 
 #### 필터링 프로세스:
 - 누락된 값 제거
-- 특정 문자열 패턴(weired pattern)을 포함하는 질문 제거
+- 특정 문자열 패턴(weird pattern)을 포함하는 질문 제거
 - Qwen 모델(비추론 모델)이 틀린 질문만 유지
 - 도메인 다양성 보장
-- power-law 기반 길이 샘플링 적용
+- power law 기반 길이 샘플링 적용
 - 최종 데이터셋을 로컬에 저장하거나 Hugging Face에 업로드
 
 ## 학습
