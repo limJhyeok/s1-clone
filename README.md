@@ -78,7 +78,7 @@ classify the difficulty of questions using a pretrained language model.
 
 **Usage:**
 ```bash
-bashs scripts/difficulty_classify.sh
+bash scripts/difficulty_classify.sh
 ```
 
 ### 6.featurization
