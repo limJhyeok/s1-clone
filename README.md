@@ -73,7 +73,7 @@ To customize settings:
 python data/generate_reasoning.py --model_name={model_name} --max-model_len={max_model_len} ... 
 ```
 
-### Difficulty Classification
+### 5.Difficulty Classification
 classify the difficulty of questions using a pretrained language model.
 
 **Usage:**
@@ -81,7 +81,7 @@ classify the difficulty of questions using a pretrained language model.
 bashs scripts/difficulty_classify.sh
 ```
 
-### featurization
+### 6.featurization
 Classifies question domains, evaluates model responses, and uploads results.
 
 Requires `ANTHROPIC_API_KEY` in `.env` file.
@@ -97,7 +97,7 @@ python data/featurization.py
 3. **Upload Grading Results** - Updates the dataset with grading information.
 4. **Upload Token Length** - Computes and updates token lengths for model responses.
 
-### filtering & Sampling
+### 7. filtering & Sampling
 Prepares a refined dataset (up to 1K samples) for reasoning-based tasks.
 
 **Usage:**
