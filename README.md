@@ -1,58 +1,122 @@
 # S1 clone
-
+<p align="left">
+    <a href="README_KO.md">한국어</a>&nbsp ｜ &nbspEnglish&nbsp
+</p>
 
 ## Usage
 
 ### Install
-
-- OS: Ubuntu 22.04
-- Python: 3.11
-- Nvidia driver version: 12.4
-
+- Ensure you have `uv` installed. If not, install it first:
+    
+    ```bash
+    pip install uv
+    ```
+    
+- Install dependencies:
+    
+    ```bash
+    uv sync
+    ```
+### Activate Virtual Environment
 ```bash
-pip install -r requirements.txt
+source .venv/bin/activate
 ```
 
-### .env file setting
+
+### Environment Variables Setup
 
 fill in the `HF_TOKEN`, `HF_USERNAME` in .env file
 
 ```plain text
-# for download dataset from huggingface and upload to huggingface.
-HF_TOKEN=""
+# Hugging Face credentials for dataset management
+HF_TOKEN="your_huggingface_token"
+HF_USERNAME="your_huggingface_username"
 
-# for upload dataset to huggingface
-HF_USERNAME = ""
-
+# API Key for featurization and grading
+ANTHROPIC_API_KEY="your_claude_api_key"
 ```
-- HF_TOKEN: Hugging Face Token
-- HF_USERNAME: Hugging Face User Name
 
-## Dataset
+## Dataset Preparation
+
+### 1. Collect Data
+enerates the initial 59K dataset from the S1 paper and uploads it to Hugging Face.
 ```python
 python data/collect_data.py
 ```
-It will make the first **59k data** in s1 and then upload to your Hugging Face Dataset repository if you properly set the `HF_TOKEN` and `HF_USERNAME`
 
-### GPQA Formatting
-
-#### Overview
-
-The `data/fix_gpqa.py` script reformats the dataset by modifying the structure of the `question` and `solution` fields. This transformation standardizes the dataset to include answer choices explicitly and appends the correct answer to the solution.
-
-To apply this transformation, simply run:
+### 2. Format GPQA Data
+Reformats dataset questions and solutions for multiple-choice evaluations.
 ```python
 python data/fix_gpqa.py
 ```
-This will process the dataset and update it to the new structured format, making it more suitable for multiple-choice evaluations and automated processing.
 
-
-### Add AIME data
-
+### 3. Add AIME data
+Includes AIME-related dataset augmentation.
 ```python
 python data/add_aime.py
 ```
 
+### 4. Generate Reasoning(thinking trajectory)
+Generates reasoning labels using **DeepSeek-R1-Distill-Qwen-32B**.
+
+**Recommended Setup**: At least **4x H100 GPUs**. With this setup, processing **2048 samples** takes approximately 1 hour
+
+you should change `tensor_parallel_size` in `data/generate_reasoning.py` to your numbers of GPU machines.
+
+To generate reasoning with default settings:
+```bash
+bash scripts/generate_reasoning.sh
+```
+
+To customize settings:
+```bash
+python data/generate_reasoning.py --model_name={model_name} --max-model_len={max_model_len} ... 
+```
+
+### Difficulty Classification
+classify the difficulty of questions using a pretrained language model.
+
+**Usage:**
+```bash
+bashs scripts/difficulty_classify.sh
+```
+
+### featurization
+Classifies question domains, evaluates model responses, and uploads results.
+
+Requires `ANTHROPIC_API_KEY` in `.env` file.
+
+**Usage:**
+```bash
+python data/featurization.py
+```
+#### Featurization Steps:
+
+1. **Domain Classification** - Uses `claude-3-5-sonnet-20241022` to classify questions.
+2. **Grading** - Determines if AI-generated answers are correct using a grading model (`data/grading.txt`).
+3. **Upload Grading Results** - Updates the dataset with grading information.
+4. **Upload Token Length** - Computes and updates token lengths for model responses.
+
+### filtering & Sampling
+Prepares a refined dataset (up to 1K samples) for reasoning-based tasks.
+
+**Usage:**
+```bash
+python filter.py
+```
+
+#### Filtering Process:
+
+- Removes missing values.
+- Eliminates questions with undesired text patterns.
+- Retains only questions incorrectly answered by Qwen models(non-reasoning models).
+- Ensures domain diversity.
+- Applies power-law length sampling.
+- Saves the final dataset locally or uploads it to Hugging Face.
+## Train
+(TBD - Training commands to be added)
+## Eval
+(TBD - Evaluation steps to be included)
 ### Citation
 
 ```bibtex
